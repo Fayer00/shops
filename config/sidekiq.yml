@@ -1,0 +1,7 @@
+:concurrency: 3
+:queues:
+  - [urgent_short_process, 4]
+  - [short_process, 3]
+  - [urgent_long_process, 2]
+  - [long_process, 1]
+  - [default, 3]

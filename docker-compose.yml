@@ -1,0 +1,61 @@
+---
+version: "3.9"
+services:
+  app:
+    image: shoe_shop
+    build: .
+    command: bash -c "rm -f tmp/pids/server.pid && bin/rails s -p 3000 -b '0.0.0.0'"
+    volumes:
+      - .:/app
+      - bundle_data:/usr/local/bundle
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    image: shoe_shop
+    command: bash -c "bundle exec sidekiq"
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - app
+
+  db:
+    image: postgres:13
+    restart: always
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: shoe_shop
+      POSTGRES_USER: shoe_shop
+      POSTGRES_DB: shop
+    healthcheck:
+      test: [ "CMD-SHELL", "sh -c 'pg_isready -U shoe_shop -d shop'" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:latest
+    restart: always
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+
+volumes:
+  pg_data:
+  bundle_data:
+  redis_data:
